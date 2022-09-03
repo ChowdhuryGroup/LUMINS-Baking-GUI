@@ -1,22 +1,12 @@
 import wx
 import matplotlib.pyplot as plt
-import matplotlib
-
-matplotlib.use("WXAgg")
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_wxagg import (
-    FigureCanvasWxAgg as FigureCanvas,
-    NavigationToolbar2WxAgg as NavigationToolbar,
-)
-import numpy as np
-from os import getcwd, chdir, startfile, makedirs
-from os.path import realpath, exists, join, abspath, dirname
-import os, sys
-from PIL import Image
-import pandas as pd
-import matplotlib.image as mpimg
 import matplotlib as mpl
-from mpl_toolkits.mplot3d import Axes3D
+
+mpl.use("WXAgg")
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
+import numpy as np
+import os
+import pandas as pd
 from scipy.linalg import norm
 
 
@@ -47,7 +37,6 @@ class TopPanel(wx.Panel):
         self.addPressure1 = wx.TextCtrl(self, -1, pos=(350, 335))
         self.Buttonfile.Bind(wx.EVT_BUTTON, self.Addfile)
 
-        os.chdir("C:\\Users\\spmuser\\Desktop")
         # os.makedirs('Baking_tempevolution_on_LUMINS')
         # os.chdir('C:\\Users\\spmuser\\Desktop\\Baking_tempevolution_on_LUMINS')
         if os.path.exists("parts_temp.csv"):
@@ -128,49 +117,50 @@ class TopPanel(wx.Panel):
 
 
 class BottomPanel(wx.Panel):
-    def Startevolution(self, event):
+    def Startevolution(self):
         # self.fig2, self.ax2 = plt.subplots(figsize=(3,3))
         # self.fig = plt.figure()
         # self.ax = self.fig.add_subplot(111, projection='3d')
-        theta = np.linspace(0, 2 * np.pi, 201)
-        phi = np.linspace(0, np.pi, 201)
-        # definition of sphere:
-        def sphere(diameter):
-            x0 = diameter * np.outer(np.cos(theta), np.sin(phi))
-            y0 = diameter * np.outer(np.sin(theta), np.sin(phi))
-            z0 = diameter * np.outer(np.ones(201), np.cos(phi))
-            return x0, y0, z0
+        self.theta = np.linspace(0, 2 * np.pi, 201)
+        self.phi = np.linspace(0, np.pi, 201)
 
-        # definition of cylinder for reflex obj port1:
-        def port1(R):
-            theta = np.linspace(0, 2 * np.pi, 201)
-            p0 = np.array([-8.9, 14.4, -10.5])
-            p1 = np.array([-17.8, 28.8, -21])
-            # vector in direction of axis
-            v = p1 - p0
-            # find magnitude of vector
-            mag = norm(v)
-            # unit vector in direction of axis
-            v = v / mag
-            # make some vector not in the same direction as v
-            not_v = np.array([1, 0, 0])
-            if (v == not_v).all():
-                not_v = np.array([0, 1, 0])
-            # make vector perpendicular to v
-            n1 = np.cross(v, not_v)
-            # normalize n1
-            n1 /= norm(n1)
-            # make unit vector perpendicular to v and n1
-            n2 = np.cross(v, n1)
-            # surface ranges over t from 0 to length of axis and 0 to 2*pi
-            t = np.linspace(0, mag, 201)
-            phi = np.linspace(0, np.pi, 201)
-            t, theta = np.meshgrid(t, theta)
-            X, Y, Z = [
-                p0[i] + v[i] * t + R * np.sin(theta) * n1[i] + R * np.cos(theta) * n2[i]
-                for i in [0, 1, 2]
-            ]
-            return X, Y, Z
+    def spherical_to_cartesian(radius, theta, phi):
+        x0 = radius * np.cos(theta) * np.sin(phi)
+        y0 = radius * np.sin(theta) * np.sin(phi)
+        z0 = radius * np.cos(phi)
+        return x0, y0, z0
+
+    # definition of cylinder for reflex obj port1:
+    def port1(R):
+        theta = np.linspace(0, 2 * np.pi, 201)
+        p0 = np.array([-8.9, 14.4, -10.5])
+        p1 = np.array([-17.8, 28.8, -21])
+        # vector in direction of axis
+        v = p1 - p0
+        # find magnitude of vector
+        mag = norm(v)
+        # unit vector in direction of axis
+        v = v / mag
+        # make some vector not in the same direction as v
+        not_v = np.array([1, 0, 0])
+        if (v == not_v).all():
+            not_v = np.array([0, 1, 0])
+        # make vector perpendicular to v
+        n1 = np.cross(v, not_v)
+        # normalize n1
+        print("this should be reachable but PyLance says it isn't")
+        n1 /= norm(n1)
+        # make unit vector perpendicular to v and n1
+        n2 = np.cross(v, n1)
+        # surface ranges over t from 0 to length of axis and 0 to 2*pi
+        t = np.linspace(0, mag, 201)
+        phi = np.linspace(0, np.pi, 201)
+        t, theta = np.meshgrid(t, theta)
+        X, Y, Z = [
+            p0[i] + v[i] * t + R * np.sin(theta) * n1[i] + R * np.cos(theta) * n2[i]
+            for i in [0, 1, 2]
+        ]
+        return X, Y, Z
 
         # definition of cylinder for viewport2:
         def port2(R):
@@ -423,7 +413,6 @@ class BottomPanel(wx.Panel):
         # img=mpimg.imread('C:\\Users\\spmuser\\Desktop\\GUI py\\1.png')
         # img.show()
         button2.Bind(wx.EVT_BUTTON, self.Startevolution)
-        os.chdir("C:\\Users\\spmuser\\Desktop")
         self.ax.clear()
 
     def CreatePlot(self):
@@ -466,11 +455,11 @@ class BottomPanel(wx.Panel):
         # self.sizer=wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.canvas, 1, wx.EXPAND)
         # self.SetSizer(self.sizer)
-        if os.path.exists("C:\\Users\\spmuser\\Desktop\\Baking evolution"):
+        if os.path.exists("./Baking evolution"):
             pass
         else:
-            os.makedirs("C:\\Users\\spmuser\\Desktop\\Baking evolution")
-        os.chdir("C:\\Users\\spmuser\\Desktop\\Baking evolution")
+            os.makedirs("./Baking evolution")
+        os.chdir("./Baking evolution")
 
         self.fig1.savefig("Self-defined colorbar")
 

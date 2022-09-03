@@ -37,8 +37,6 @@ class TopPanel(wx.Panel):
         self.addPressure1 = wx.TextCtrl(self, -1, pos=(350, 335))
         self.Buttonfile.Bind(wx.EVT_BUTTON, self.Addfile)
 
-        # os.makedirs('Baking_tempevolution_on_LUMINS')
-        # os.chdir('C:\\Users\\spmuser\\Desktop\\Baking_tempevolution_on_LUMINS')
         if os.path.exists("parts_temp.csv"):
             pass
         else:
@@ -88,17 +86,16 @@ class TopPanel(wx.Panel):
             msg8 = str(self.addPressure1.GetValue())
             # wx.MessageBox(msg1)
 
-        # self.addtime1.Bind(wx.EVT_TEXT_ENTER,OnEnterPressed1)
-        # self.addreflexobj1.Bind(wx.EVT_TEXT_ENTER,OnEnterPressed2)
-        # self.addSTMhead1.Bind(wx.EVT_TEXT_ENTER,OnEnterPressed3)
-        # self.addviewport1.Bind(wx.EVT_TEXT_ENTER,OnEnterPressed4)
-        # self.addiongauge1.Bind(wx.EVT_TEXT_ENTER,OnEnterPressed5)
-        # self.addsputtergun1.Bind(wx.EVT_TEXT_ENTER,OnEnterPressed6)
-        # self.addeheater1.Bind(wx.EVT_TEXT_ENTER,OnEnterPressed7)
-        # self.addPressure1.Bind(wx.EVT_TEXT_ENTER,OnEnterPressed8)
+        self.addtime1.Bind(wx.EVT_TEXT_ENTER, OnEnterPressed1)
+        self.addreflexobj1.Bind(wx.EVT_TEXT_ENTER, OnEnterPressed2)
+        self.addSTMhead1.Bind(wx.EVT_TEXT_ENTER, OnEnterPressed3)
+        self.addviewport1.Bind(wx.EVT_TEXT_ENTER, OnEnterPressed4)
+        self.addiongauge1.Bind(wx.EVT_TEXT_ENTER, OnEnterPressed5)
+        self.addsputtergun1.Bind(wx.EVT_TEXT_ENTER, OnEnterPressed6)
+        self.addeheater1.Bind(wx.EVT_TEXT_ENTER, OnEnterPressed7)
+        self.addPressure1.Bind(wx.EVT_TEXT_ENTER, OnEnterPressed8)
 
-    def Addfile(self, event):
-        os.chdir("C:\\Users\\spmuser\\Desktop")
+    def Addfile(self):
         temp_time_point = pd.DataFrame(
             {
                 "Time": [self.addtime1.GetValue()],
@@ -117,21 +114,25 @@ class TopPanel(wx.Panel):
 
 
 class BottomPanel(wx.Panel):
-    def Startevolution(self):
-        # self.fig2, self.ax2 = plt.subplots(figsize=(3,3))
-        # self.fig = plt.figure()
-        # self.ax = self.fig.add_subplot(111, projection='3d')
-        self.theta = np.linspace(0, 2 * np.pi, 201)
-        self.phi = np.linspace(0, np.pi, 201)
+    def __init__(self, parent: wx.SplitterWindow):
+        wx.Panel.__init__(self, parent=parent)
+        button2 = wx.Button(self, -1, "Start evolution")
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.Add(button2, 1)
+        self.SetSizer(self.sizer)
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection="3d")
+        button2.Bind(wx.EVT_BUTTON, self.start_evolution)
+        self.ax.clear()
 
-    def spherical_to_cartesian(radius, theta, phi):
+    def spherical_to_cartesian(self, radius, theta, phi):
         x0 = radius * np.cos(theta) * np.sin(phi)
         y0 = radius * np.sin(theta) * np.sin(phi)
         z0 = radius * np.cos(phi)
         return x0, y0, z0
 
     # definition of cylinder for reflex obj port1:
-    def port1(R):
+    def port1(self, radius):
         theta = np.linspace(0, 2 * np.pi, 201)
         p0 = np.array([-8.9, 14.4, -10.5])
         p1 = np.array([-17.8, 28.8, -21])
@@ -148,7 +149,6 @@ class BottomPanel(wx.Panel):
         # make vector perpendicular to v
         n1 = np.cross(v, not_v)
         # normalize n1
-        print("this should be reachable but PyLance says it isn't")
         n1 /= norm(n1)
         # make unit vector perpendicular to v and n1
         n2 = np.cross(v, n1)
@@ -157,177 +157,200 @@ class BottomPanel(wx.Panel):
         phi = np.linspace(0, np.pi, 201)
         t, theta = np.meshgrid(t, theta)
         X, Y, Z = [
-            p0[i] + v[i] * t + R * np.sin(theta) * n1[i] + R * np.cos(theta) * n2[i]
+            p0[i]
+            + v[i] * t
+            + radius * np.sin(theta) * n1[i]
+            + radius * np.cos(theta) * n2[i]
             for i in [0, 1, 2]
         ]
         return X, Y, Z
 
-        # definition of cylinder for viewport2:
-        def port2(R):
-            theta = np.linspace(0, 2 * np.pi, 201)
-            p0 = np.array([-10.7, -14.32, -8.9])
-            p1 = np.array([-21.4, -28.64, -17.8])
-            # vector in direction of axis
-            v = p1 - p0
-            # find magnitude of vector
-            mag = norm(v)
-            # unit vector in direction of axis
-            v = v / mag
-            # make some vector not in the same direction as v
-            not_v = np.array([1, 0, 0])
-            if (v == not_v).all():
-                not_v = np.array([0, 1, 0])
-            # make vector perpendicular to v
-            n1 = np.cross(v, not_v)
-            # normalize n1
-            n1 /= norm(n1)
-            # make unit vector perpendicular to v and n1
-            n2 = np.cross(v, n1)
-            # surface ranges over t from 0 to length of axis and 0 to 2*pi
-            t = np.linspace(0, mag, 201)
-            phi = np.linspace(0, np.pi, 201)
-            t, theta = np.meshgrid(t, theta)
-            X, Y, Z = [
-                p0[i] + v[i] * t + R * np.sin(theta) * n1[i] + R * np.cos(theta) * n2[i]
-                for i in [0, 1, 2]
-            ]
-            return X, Y, Z
+    # definition of cylinder for viewport2:
+    def port2(self, radius):
+        theta = np.linspace(0, 2 * np.pi, 201)
+        p0 = np.array([-10.7, -14.32, -8.9])
+        p1 = np.array([-21.4, -28.64, -17.8])
+        # vector in direction of axis
+        v = p1 - p0
+        # find magnitude of vector
+        mag = norm(v)
+        # unit vector in direction of axis
+        v = v / mag
+        # make some vector not in the same direction as v
+        not_v = np.array([1, 0, 0])
+        if (v == not_v).all():
+            not_v = np.array([0, 1, 0])
+        # make vector perpendicular to v
+        n1 = np.cross(v, not_v)
+        # normalize n1
+        n1 /= norm(n1)
+        # make unit vector perpendicular to v and n1
+        n2 = np.cross(v, n1)
+        # surface ranges over t from 0 to length of axis and 0 to 2*pi
+        t = np.linspace(0, mag, 201)
+        phi = np.linspace(0, np.pi, 201)
+        t, theta = np.meshgrid(t, theta)
+        X, Y, Z = [
+            p0[i]
+            + v[i] * t
+            + radius * np.sin(theta) * n1[i]
+            + radius * np.cos(theta) * n2[i]
+            for i in [0, 1, 2]
+        ]
+        return X, Y, Z
 
-        # definition of cylinder for STM head3:
-        def port3(R):
-            theta = np.linspace(0, 2 * np.pi, 201)
-            p0 = np.array([0, 0, 20])
-            p1 = np.array([0, 0, 80])
-            # vector in direction of axis
-            v = p1 - p0
-            # find magnitude of vector
-            mag = norm(v)
-            # unit vector in direction of axis
-            v = v / mag
-            # make some vector not in the same direction as v
-            not_v = np.array([1, 0, 0])
-            if (v == not_v).all():
-                not_v = np.array([0, 1, 0])
-            # make vector perpendicular to v
-            n1 = np.cross(v, not_v)
-            # normalize n1
-            n1 /= norm(n1)
-            # make unit vector perpendicular to v and n1
-            n2 = np.cross(v, n1)
-            # surface ranges over t from 0 to length of axis and 0 to 2*pi
-            t = np.linspace(0, mag, 201)
-            phi = np.linspace(0, np.pi, 201)
-            t, theta = np.meshgrid(t, theta)
-            X, Y, Z = [
-                p0[i] + v[i] * t + R * np.sin(theta) * n1[i] + R * np.cos(theta) * n2[i]
-                for i in [0, 1, 2]
-            ]
-            return X, Y, Z
+    # definition of cylinder for STM head3:
+    def port3(self, radius):
+        theta = np.linspace(0, 2 * np.pi, 201)
+        p0 = np.array([0, 0, 20])
+        p1 = np.array([0, 0, 80])
+        # vector in direction of axis
+        v = p1 - p0
+        # find magnitude of vector
+        mag = norm(v)
+        # unit vector in direction of axis
+        v = v / mag
+        # make some vector not in the same direction as v
+        not_v = np.array([1, 0, 0])
+        if (v == not_v).all():
+            not_v = np.array([0, 1, 0])
+        # make vector perpendicular to v
+        n1 = np.cross(v, not_v)
+        # normalize n1
+        n1 /= norm(n1)
+        # make unit vector perpendicular to v and n1
+        n2 = np.cross(v, n1)
+        # surface ranges over t from 0 to length of axis and 0 to 2*pi
+        t = np.linspace(0, mag, 201)
+        phi = np.linspace(0, np.pi, 201)
+        t, theta = np.meshgrid(t, theta)
+        X, Y, Z = [
+            p0[i]
+            + v[i] * t
+            + radius * np.sin(theta) * n1[i]
+            + radius * np.cos(theta) * n2[i]
+            for i in [0, 1, 2]
+        ]
+        return X, Y, Z
 
-        # definition of cylinder for ion gauge port4:
-        def port4(R):
-            theta = np.linspace(0, 2 * np.pi, 201)
-            p0 = np.array([7.7, -15.15, 10.5])
-            p1 = np.array([15.4, -30.3, 21])
-            # vector in direction of axis
-            v = p1 - p0
-            # find magnitude of vector
-            mag = norm(v)
-            # unit vector in direction of axis
-            v = v / mag
-            # make some vector not in the same direction as v
-            not_v = np.array([1, 0, 0])
-            if (v == not_v).all():
-                not_v = np.array([0, 1, 0])
-            # make vector perpendicular to v
-            n1 = np.cross(v, not_v)
-            # normalize n1
-            n1 /= norm(n1)
-            # make unit vector perpendicular to v and n1
-            n2 = np.cross(v, n1)
-            # surface ranges over t from 0 to length of axis and 0 to 2*pi
-            t = np.linspace(0, mag, 201)
-            phi = np.linspace(0, np.pi, 201)
-            t, theta = np.meshgrid(t, theta)
-            X, Y, Z = [
-                p0[i] + v[i] * t + R * np.sin(theta) * n1[i] + R * np.cos(theta) * n2[i]
-                for i in [0, 1, 2]
-            ]
-            return X, Y, Z
+    # definition of cylinder for ion gauge port4:
+    def port4(self, radius):
+        theta = np.linspace(0, 2 * np.pi, 201)
+        p0 = np.array([7.7, -15.15, 10.5])
+        p1 = np.array([15.4, -30.3, 21])
+        # vector in direction of axis
+        v = p1 - p0
+        # find magnitude of vector
+        mag = norm(v)
+        # unit vector in direction of axis
+        v = v / mag
+        # make some vector not in the same direction as v
+        not_v = np.array([1, 0, 0])
+        if (v == not_v).all():
+            not_v = np.array([0, 1, 0])
+        # make vector perpendicular to v
+        n1 = np.cross(v, not_v)
+        # normalize n1
+        n1 /= norm(n1)
+        # make unit vector perpendicular to v and n1
+        n2 = np.cross(v, n1)
+        # surface ranges over t from 0 to length of axis and 0 to 2*pi
+        t = np.linspace(0, mag, 201)
+        phi = np.linspace(0, np.pi, 201)
+        t, theta = np.meshgrid(t, theta)
+        X, Y, Z = [
+            p0[i]
+            + v[i] * t
+            + radius * np.sin(theta) * n1[i]
+            + radius * np.cos(theta) * n2[i]
+            for i in [0, 1, 2]
+        ]
+        return X, Y, Z
 
-        # definition of cylinder for sputter gun port5:
-        def port5(R):
-            theta = np.linspace(0, 2 * np.pi, 201)
-            p0 = np.array([17.12, -9.85, 3])
-            p1 = np.array([42.8, -24.625, 7.5])
-            # vector in direction of axis
-            v = p1 - p0
-            # find magnitude of vector
-            mag = norm(v)
-            # unit vector in direction of axis
-            v = v / mag
-            # make some vector not in the same direction as v
-            not_v = np.array([1, 0, 0])
-            if (v == not_v).all():
-                not_v = np.array([0, 1, 0])
-            # make vector perpendicular to v
-            n1 = np.cross(v, not_v)
-            # normalize n1
-            n1 /= norm(n1)
-            # make unit vector perpendicular to v and n1
-            n2 = np.cross(v, n1)
-            # surface ranges over t from 0 to length of axis and 0 to 2*pi
-            t = np.linspace(0, mag, 201)
-            phi = np.linspace(0, np.pi, 201)
-            t, theta = np.meshgrid(t, theta)
-            X, Y, Z = [
-                p0[i] + v[i] * t + R * np.sin(theta) * n1[i] + R * np.cos(theta) * n2[i]
-                for i in [0, 1, 2]
-            ]
-            return X, Y, Z
+    # definition of cylinder for sputter gun port5:
+    def port5(self, radius):
+        theta = np.linspace(0, 2 * np.pi, 201)
+        p0 = np.array([17.12, -9.85, 3])
+        p1 = np.array([42.8, -24.625, 7.5])
+        # vector in direction of axis
+        v = p1 - p0
+        # find magnitude of vector
+        mag = norm(v)
+        # unit vector in direction of axis
+        v = v / mag
+        # make some vector not in the same direction as v
+        not_v = np.array([1, 0, 0])
+        if (v == not_v).all():
+            not_v = np.array([0, 1, 0])
+        # make vector perpendicular to v
+        n1 = np.cross(v, not_v)
+        # normalize n1
+        n1 /= norm(n1)
+        # make unit vector perpendicular to v and n1
+        n2 = np.cross(v, n1)
+        # surface ranges over t from 0 to length of axis and 0 to 2*pi
+        t = np.linspace(0, mag, 201)
+        phi = np.linspace(0, np.pi, 201)
+        t, theta = np.meshgrid(t, theta)
+        X, Y, Z = [
+            p0[i]
+            + v[i] * t
+            + radius * np.sin(theta) * n1[i]
+            + radius * np.cos(theta) * n2[i]
+            for i in [0, 1, 2]
+        ]
+        return X, Y, Z
 
-        # definition of cylinder for eheater port6:
-        def port6(R):
-            theta = np.linspace(0, 2 * np.pi, 201)
-            p0 = np.array([9.39, 15.21, -8.96])
-            p1 = np.array([28.17, 45.63, -26.88])
-            # vector in direction of axis
-            v = p1 - p0
-            # find magnitude of vector
-            mag = norm(v)
-            # unit vector in direction of axis
-            v = v / mag
-            # make some vector not in the same direction as v
-            not_v = np.array([1, 0, 0])
-            if (v == not_v).all():
-                not_v = np.array([0, 1, 0])
-            # make vector perpendicular to v
-            n1 = np.cross(v, not_v)
-            # normalize n1
-            n1 /= norm(n1)
-            # make unit vector perpendicular to v and n1
-            n2 = np.cross(v, n1)
-            # surface ranges over t from 0 to length of axis and 0 to 2*pi
-            t = np.linspace(0, mag, 201)
-            phi = np.linspace(0, np.pi, 201)
-            t, theta = np.meshgrid(t, theta)
-            X, Y, Z = [
-                p0[i] + v[i] * t + R * np.sin(theta) * n1[i] + R * np.cos(theta) * n2[i]
-                for i in [0, 1, 2]
-            ]
-            return X, Y, Z
+    # definition of cylinder for eheater port6:
+    def port6(self, radius):
+        theta = np.linspace(0, 2 * np.pi, 201)
+        p0 = np.array([9.39, 15.21, -8.96])
+        p1 = np.array([28.17, 45.63, -26.88])
+        # vector in direction of axis
+        v = p1 - p0
+        # find magnitude of vector
+        mag = norm(v)
+        # unit vector in direction of axis
+        v = v / mag
+        # make some vector not in the same direction as v
+        not_v = np.array([1, 0, 0])
+        if (v == not_v).all():
+            not_v = np.array([0, 1, 0])
+        # make vector perpendicular to v
+        n1 = np.cross(v, not_v)
+        # normalize n1
+        n1 /= norm(n1)
+        # make unit vector perpendicular to v and n1
+        n2 = np.cross(v, n1)
+        # surface ranges over t from 0 to length of axis and 0 to 2*pi
+        t = np.linspace(0, mag, 201)
+        phi = np.linspace(0, np.pi, 201)
+        t, theta = np.meshgrid(t, theta)
+        X, Y, Z = [
+            p0[i]
+            + v[i] * t
+            + radius * np.sin(theta) * n1[i]
+            + radius * np.cos(theta) * n2[i]
+            for i in [0, 1, 2]
+        ]
+        return X, Y, Z
 
-        x0, y0, z0 = sphere(20)
-        x1, y1, z1 = port1(5)
-        x2, y2, z2 = port2(15)
-        x3, y3, z3 = port3(10)
-        x4, y4, z4 = port4(5)
-        x5, y5, z5 = port5(5)
-        x6, y6, z6 = port6(5)
+    def start_evolution(self, event):
+        # self.fig2, self.ax2 = plt.subplots(figsize=(3,3))
+        # self.fig = plt.figure()
+        # self.ax = self.fig.add_subplot(111, projection='3d')
+        theta = np.linspace(0, 2 * np.pi, 201)
+        phi = np.linspace(0, np.pi, 201)
+        x0, y0, z0 = self.spherical_to_cartesian(20.0 * np.ones_like(theta), theta, phi)
+        x1, y1, z1 = self.port1(5)
+        x2, y2, z2 = self.port2(15)
+        x3, y3, z3 = self.port3(10)
+        x4, y4, z4 = self.port4(5)
+        x5, y5, z5 = self.port5(5)
+        x6, y6, z6 = self.port6(5)
 
         plt.ion()
         # Data Coordinates
-        os.chdir("C:\\Users\\spmuser\\Desktop")
         results = pd.read_csv("parts_temp.csv")
         # while True:
         for i in range(len(results)):
@@ -383,11 +406,11 @@ class BottomPanel(wx.Panel):
                 "%s" % results.iat[i, 0] + "%s" % results.iat[i, 7], loc="right"
             )  # ,'&', results.iat[i,7] )
             # time.sleep(10)
-            if os.path.exists("C:\\Users\\spmuser\\Desktop\\Baking evolution"):
+            if os.path.exists("./Baking evolution"):
                 pass
             else:
-                os.makedirs("C:\\Users\\spmuser\\Desktop\\Baking evolution")
-            os.chdir("C:\\Users\\spmuser\\Desktop\\Baking evolution")
+                os.makedirs("./Baking evolution")
+            os.chdir("./Baking evolution")
             self.ax.view_init(-8, -140)
             self.fig.savefig("%d.png" % i)
             self.canvas = FigureCanvas(self, 1, self.fig)
@@ -399,21 +422,6 @@ class BottomPanel(wx.Panel):
         # self.ax2.set_ylabel('Pressure')
         # self.canvas2 = FigureCanvas(self, 1, self.fig2)
         # self.sizer.Add(self.canvas2,1,wx.EXPAND)
-
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent=parent)
-        button2 = wx.Button(self, -1, "Start evolution")
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(button2, 1)
-        self.SetSizer(self.sizer)
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111, projection="3d")
-        # button2.Bind()
-        # img=Image.open('C:\\Users\\spmuser\\Desktop\\GUI py\\1.png')
-        # img=mpimg.imread('C:\\Users\\spmuser\\Desktop\\GUI py\\1.png')
-        # img.show()
-        button2.Bind(wx.EVT_BUTTON, self.Startevolution)
-        self.ax.clear()
 
     def CreatePlot(self):
         self.fig1, self.ax1 = plt.subplots(figsize=(6, 1))
@@ -452,16 +460,14 @@ class BottomPanel(wx.Panel):
         )
         self.cb2.set_label("Discrete intervals, some other units")
         self.canvas = FigureCanvas(self, 1, self.fig1)
-        # self.sizer=wx.BoxSizer(wx.VERTICAL)
         self.sizer.Add(self.canvas, 1, wx.EXPAND)
-        # self.SetSizer(self.sizer)
         if os.path.exists("./Baking evolution"):
             pass
         else:
             os.makedirs("./Baking evolution")
         os.chdir("./Baking evolution")
 
-        self.fig1.savefig("Self-defined colorbar")
+        self.fig1.savefig("Self-defined colorbar.svg")
 
 
 class bottomPRight(wx.Panel):
@@ -476,11 +482,8 @@ class bottomPRight(wx.Panel):
         self.ax2 = self.fig2.add_subplot(111)
         self.ax2.clear()
 
-    def TimePressure(self, event):
-        os.chdir("C:\\Users\\spmuser\\Desktop")
+    def TimePressure(self):
         results = pd.read_csv("parts_temp.csv")
-        # self.fig2 = plt.figure()
-        # self.ax2 = self.fig2.add_subplot(111)
         Time = results["Time"].tolist()
         Pressure = results["Pressure"].tolist()
         self.ax2.plot(Time, Pressure)
@@ -488,23 +491,18 @@ class bottomPRight(wx.Panel):
         self.ax2.set_ylabel("Pressure")
         self.canvas2 = FigureCanvas(self, 1, self.fig2)
         self.sizer.Add(self.canvas2, 1, wx.EXPAND)
-        if os.path.exists("C:\\Users\\spmuser\\Desktop\\Baking evolution"):
+        if os.path.exists("./Baking evolution"):
             pass
         else:
-            os.makedirs("C:\\Users\\spmuser\\Desktop\\Baking evolution")
-        os.chdir("C:\\Users\\spmuser\\Desktop\\Baking evolution")
+            os.makedirs("./Baking evolution")
+        os.chdir("./Baking evolution")
         self.fig2.savefig("Time-Pressure")
 
 
-# class BottomP(wx.Panel):
-# def __init__(self,parent):
-# wx.Panel.__init__(self,parent=parent)
-
-
-class Main(wx.Frame):
+class TopLevelFrame(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(
-            self, parent=None, title="Baking evolution of LUMINS", size=(1000, 1000)
+            self, parent=None, title="Baking Evolution of LUMINS", size=(1000, 1000)
         )
         splitter = wx.SplitterWindow(self)
         vSplitter = wx.SplitterWindow(splitter)
@@ -523,6 +521,6 @@ class Main(wx.Frame):
 
 if __name__ == "__main__":
     app = wx.App()
-    frame = Main()
+    frame = TopLevelFrame()
     frame.Show()
     app.MainLoop()
